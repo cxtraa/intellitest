@@ -1,0 +1,18 @@
+[theme]
+
+# Primary accent for interactive elements (a soft blue for a friendly feel)
+primaryColor = '#2E3440'  # A softer shade of blue
+
+# Background color for the main content area (a light grey to keep it subtle and professional)
+backgroundColor = '#ECEFF4'  # Very light grey
+
+# Background color for sidebar and most interactive widgets (a lighter green for a fresh look)
+secondaryBackgroundColor = '#FFAD9F'  # Soft green
+
+# Color used for almost all text (dark grey for better readability on light backgrounds)
+textColor = '#2E3440'  # Near-black, provides good contrast on light backgrounds
+
+# Font family for all text in the app, except code blocks
+# Accepted values (serif | sans serif | monospace) 
+# Default: "sans serif"
+font = "serif"
