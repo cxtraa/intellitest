@@ -1,11 +1,8 @@
 streamlit
 numpy
 pandas
-matplotlib.pyplot
-re
-io
+matplotlib
 PyPDF2
-pprint
 openai
 scikit-learn
 sentence-transformers
