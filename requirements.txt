@@ -1,0 +1,11 @@
+streamlit
+numpy
+pandas
+matplotlib
+re
+io
+PyPDF2
+pprint
+openai
+scikit-learn
+sentence-transformers
