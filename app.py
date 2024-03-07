@@ -1,10 +1,10 @@
 """
 Application frontend.
+Allows users to interact with chatbot.
 """
 
 #%% Import modules
 import streamlit as st
-import torch as t
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -47,7 +47,7 @@ if st.session_state['uploaded_files'] and st.session_state['initial_prompt']:
     st.session_state['init_done'] = True
 
 #%% Get initial prompt and user documents
-if not st.session_state['initial_prompt']:
+if not st.session_state['init_done']:
     with st.container():
         st.markdown(WELCOME)
     initial_prompt = st.chat_input("Enter education level and subject")    
@@ -55,7 +55,7 @@ if not st.session_state['initial_prompt']:
     if initial_prompt:
         st.rerun()
 
-if not st.session_state['uploaded_files']:
+if not st.session_state['init_done']:
     uploaded_files = st.file_uploader("Upload your exam documents here.", type=['pdf'], accept_multiple_files=True)
     if uploaded_files:
         all_chunks = []
