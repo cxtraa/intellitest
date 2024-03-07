@@ -1,7 +1,7 @@
 streamlit
 numpy
 pandas
-matplotlib
+matplotlib.pyplot
 re
 io
 PyPDF2
