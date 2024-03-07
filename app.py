@@ -98,8 +98,9 @@ if st.session_state['init_done']:
         User query for generating questions: {prompt}
         """
 
-        with st.chat_message("user"):
-            st.markdown(augmented_query)
+        # For debugging only
+        # with st.chat_message("user"):
+        #     st.markdown(augmented_query)
         
         problem, solution = one_question_pipeline(
             client=client,
