@@ -19,8 +19,16 @@ from constants import *
 with open( "style.css" ) as css:
     st.markdown( f'<style>{css.read()}</style>' , unsafe_allow_html= True)
 
+# API key input
+if "openai_api_key" not in st.session_state or st.session_state["openai_api_key"] is None:
+    api_key = st.text_input("Enter your OpenAI API key:", type="password")
+    if api_key:
+        st.session_state["openai_api_key"] = api_key
+    else:
+        st.stop()
+
 # Initialise OpenAI client
-client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = openai.OpenAI(api_key=st.session_state["openai_api_key"])
 
 # Check session state
 if "init_done" not in st.session_state:
