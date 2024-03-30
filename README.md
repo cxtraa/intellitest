@@ -6,6 +6,16 @@ Intellitest is an LLM application that produces bespoke exam questions for you b
 
 Upload past exam documents, type in a query like, "Generate an exam problem on thermodynamics", and watch high-quality questions and solutions unfold in front of you!
 
+## Usage instructions
+
+Currently, the application is not available on the web. Therefore, you will have to clone the repository locally. Then, run the following command from within `/intellitest`:
+
+```bash
+streamlit run app.py
+```
+
+A link will be generated where you can interface with the model. Note that you will need an OpenAI API key to use the application - you can get one by [signing up for an OpenAI account.](https://openai.com/)
+
 ### How does it work?
 
 Intellitest runs using the OpenAI API. The language model used is `gpt-3.5-turbo`, and the embedding model used is `text-embedding-3-small`.
