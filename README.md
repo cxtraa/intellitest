@@ -25,3 +25,10 @@ When you upload files, we check to see if your file already exists on our databa
 Your query is also embedded, and the cosine similarity metric is used to find the `N_CONTEXT` most similar questions in our database. These are returned and placed into the models context window, along with some auto-generated keywords that help enrich the model query.
 
 All of this helps GPT-3.5 produce a high-quality response that is tailored to your specific exam.
+
+### Architecture
+
+- Embeddings : `openai`
+- Language model : `openai`
+- Vector database : `chromadb`
+- File database : `sqlite3`

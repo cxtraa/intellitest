@@ -13,32 +13,14 @@ import sqlite3
 import hashlib
 import pickle
 from io import BytesIO
-from annoy import AnnoyIndex
+import chromadb
+import uuid
+from chromadb.api.models.Collection import Collection
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Tuple, Dict, Set, Iterable
 
 from constants import *
-from db_management import *
-
-def perform_embedding(client : openai.OpenAI, chunks : List[str]) -> None:
-    """
-    Given a list of text chunks (`chunked_documents`),
-    embed the text chunks and store on the vector database.
-    """
-
-    raw_chunk_embeddings = client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=chunks,
-    )
-
-    chunk_embeddings = [e.embedding for e in raw_chunk_embeddings.data]
-
-    add_embeddings_to_vdb(
-        new_chunk_embeddings=chunk_embeddings,
-        new_chunks=chunks,
-        index_file=VECTOR_DB_PATH,
-        mapping_file=EMBEDDINGS_TO_TEXT_PATH,
-    )
+from db_management import *    
 
 def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
     """
@@ -97,6 +79,7 @@ def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
 
 def files_upload_pipeline(
     db_connection : sqlite3.Connection,
+    collection : Collection,
     cursor : sqlite3.Cursor,
     client : openai.OpenAI,
     pdf_files : List[BytesIO]
@@ -111,11 +94,16 @@ def files_upload_pipeline(
     chunked_documents = []
 
     for pdf_file in pdf_files:
+
         file_hash = compute_hash(pdf_file)
-        if not file_exists(cursor, file_hash): # Check if file hash is in database
+
+        if not file_exists(cursor, file_hash):
+
+            # If the file doesn't exist, add it to the DB and chunk it
             insert_file(cursor, file_hash)
             db_connection.commit()
             print("File was successfully added to database.")
+            
             chunked_document = extract_text_from_pdf(client, pdf_file)
             chunked_documents += chunked_document
         else:
@@ -124,10 +112,11 @@ def files_upload_pipeline(
 
     # Embed these chunks
     if len(chunked_documents) > 0:
-        perform_embedding(
-            client=client,
-            chunks=chunked_documents
+        collection.add(
+            documents=chunked_documents,
+            ids=[str(uuid.uuid4()) for _ in range(len(chunked_documents))],
         )
+        
 
 def convert_latex_format(math_string : str) -> str:
     """
@@ -213,7 +202,7 @@ def question_solution_pipeline(client : openai.OpenAI, query_with_keywords_examp
 
     return question, answer
 
-def augment_query(client : openai.OpenAI, query : str) -> str:
+def augment_query(client : openai.OpenAI, collection : Collection, query : str) -> str:
     """
     Given a user query, augment the query with keywords and example questions.
     """
@@ -232,10 +221,10 @@ Relevant keywords: {keywords}
     )
     query_embedding = [e.embedding for e in raw_query_embedding.data]
 
-    context = query_similar_chunks(
-        query_embedding=query_embedding[0],
+    context = collection.query(
+        query_embeddings=query_embedding,
         n_results=N_CONTEXT,
-    )
+    )["documents"][0]
 
     formatted_context = ""
     for i, problem in enumerate(context, start=1):

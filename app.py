@@ -9,26 +9,13 @@ import re
 import numpy as np
 import openai
 import PyPDF2
+import chromadb
 from sklearn.metrics.pairwise import cosine_similarity
+from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from typing import List, Tuple
 
 from utils import *
 from constants import *
-
-# Load style.css
-with open( "style.css" ) as css:
-    st.markdown( f'<style>{css.read()}</style>' , unsafe_allow_html= True)
-
-# API key input
-if "openai_api_key" not in st.session_state or st.session_state["openai_api_key"] is None:
-    api_key = st.text_input("Enter your OpenAI API key:", type="password")
-    if api_key:
-        st.session_state["openai_api_key"] = api_key
-    else:
-        st.stop()
-
-# Initialise OpenAI client
-client = openai.OpenAI(api_key=st.session_state["openai_api_key"])
 
 # Check session state
 if "init_done" not in st.session_state:
@@ -38,13 +25,40 @@ if "messages" not in st.session_state:
 if "first_query" not in st.session_state:
     st.session_state["first_query"] = True # checks if this is the user's first query
 
+# Load style.css
+with open( "style.css" ) as css:
+    st.markdown( f'<style>{css.read()}</style>' , unsafe_allow_html= True)
+
 # Display title
 st.title("Intellitest.")
 
 # Recall message history
-for message in st.session_state["messages"]:
+for message in st.session_state.messages:
     with st.chat_message(message["role"], avatar=message["avatar"]):
         st.markdown(message["content"])
+
+# API key input
+if "openai_api_key" not in st.session_state or st.session_state["openai_api_key"] is None:
+    api_key = st.text_input("Enter your OpenAI API key:", type="password")
+    if api_key:
+        st.session_state["openai_api_key"] = api_key
+        st.rerun()
+    else:
+        st.stop()
+
+# Initialise OpenAI client
+openai_client = openai.OpenAI(api_key=st.session_state["openai_api_key"])
+embedding_function = OpenAIEmbeddingFunction(
+    api_key=st.session_state["openai_api_key"],
+    model_name=EMBEDDING_MODEL,
+)
+
+# Initialise ChromaDB client (creates if not already existing)
+chroma_client = chromadb.PersistentClient(path="./chroma")
+documents_collection = chroma_client.get_or_create_collection(
+    name="documents",
+    embedding_function=embedding_function,
+)
 
 # Upload documents
 if not st.session_state["init_done"]:
@@ -64,7 +78,8 @@ if not st.session_state["init_done"]:
         files_upload_pipeline(
             db_connection=files_db_connection,
             cursor=cursor,
-            client=client,
+            client=openai_client,
+            collection=documents_collection,
             pdf_files=uploaded_files,
         )
 
@@ -74,6 +89,7 @@ if not st.session_state["init_done"]:
 
         st.session_state["init_done"] = True
         st.success("Documents processed successfully.")
+        st.rerun()
 
 # Query model
 if st.session_state["init_done"]:
@@ -99,7 +115,8 @@ if st.session_state["init_done"]:
 
         # Augment the user's query
         augmented_query = augment_query(
-            client=client,
+            client=openai_client,
+            collection=documents_collection,
             query=query,
         )
         
@@ -108,7 +125,7 @@ if st.session_state["init_done"]:
 
         # Generate question and solution
         question, solution = question_solution_pipeline(
-            client=client,
+            client=openai_client,
             query_with_keywords_examples=augmented_query,
         )
 
