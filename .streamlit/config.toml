@@ -1,0 +1,10 @@
+[theme]
+base="dark"
+
+[server]
+headless = true
+enableXsrfProtection=false
+enableCORS=false
+
+[client]
+toolbarMode="minimal"
