@@ -18,6 +18,7 @@ EMBEDDINGS_TO_TEXT_PATH = "./chunks_mapping.pkl"
 
 # Temperature for prompts
 TEMPS = {
+    "clean_input" : 0.8,
     "keywords" : 0.1,
     "question" : 0.8,
     "answer" : 0.5,
@@ -27,8 +28,9 @@ TEMPS = {
 WELCOME = """
 Welcome to Intellitest.
 
-Intellitest is a web application designed for Cambridge Engineering students. It generates exam questions when prompted, using context from Tripos exam questions uploaded to the system. 
-Please note that this system is designed to work with Cambridge Engineering papers. It may not function correctly for other exams.
+Intellitest is an LLM application that generates exam questions tailored to your specific exam, based on the documents you provide.
+
+To get started, simply upload your exam documents.
 """
 
 START_QUERYING = """
@@ -40,12 +42,12 @@ Assistant is a large language model trained by OpenAI.
 """
 
 KEYWORDS_SYSPROMPT = """
-You are a helpful large language model.
+Assistant is a large language model trained by OpenAI.
 You output 10 similar words to the keywords in a sentence.
 """
 
 QUESTION_SYSPROMPT = """
-You are an exam question setter for the Cambridge Engineering Tripos.
+Assistant is a large language model trained by OpenAI.
 You must produce difficult exam problems that require deep problem-solving skills.
 The questions must be logical and should have concrete answers, either numerical or algebraic.
 The questions must consistent of text only.
@@ -54,7 +56,8 @@ Use LaTeX for all mathematical expressions.
 """
 
 ANSWER_SYSPROMPT = """
-You are an expert at producing solutions to engineering problems for the Cambridge Engineering Tripos.
+Assistant is a large language model trained by OpenAI.
+You are an expert at producing solutions to exam problems.
 The solutions you produce are step-by-step, and you check each step logically to make sure the whole argument is logical.
 You do not miss out any steps between the question and getting to the solution.
 You are not afraid to give long responses if necessary to fully answer the problem.

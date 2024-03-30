@@ -84,7 +84,7 @@ def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
                 {"role" : "system", "content" : CLEAN_INPUT_SYSPROMPT},
                 {"role" : "user", "content" : clean_input_instructions}
             ],
-            temperature=0.8,
+            temperature=TEMPS["clean_input"],
         )
         cleaned_page = cleaned_page_response.choices[0].message.content
 
