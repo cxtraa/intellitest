@@ -143,7 +143,7 @@ def question_solution_pipeline(
     question = question_response.choices[0].message.content
 
     answer_instructions = f"""
-    Explain in detail your solution to the following exam problem, as if you were an extremely intelligent student taking the exam.
+    Write out the full solution to the following problem.
 
     Problem:
     {question}
@@ -201,7 +201,7 @@ User query: {query}
 
 Relevant keywords: {keywords}
 
-Copy the style of these example questions. Do not use concepts outside of the examples:
+You MUST use the concepts from these questions and copy their style closely:
 
 {formatted_context}
     """
