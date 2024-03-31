@@ -2,6 +2,7 @@
 Utility functions.
 """
 
+import streamlit as st
 import openai 
 import os 
 import re 
@@ -19,14 +20,14 @@ from chromadb.api.models.Collection import Collection
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Tuple, Dict, Set, Iterable
 
-from constants import *
-from db_management import *    
+from constants import * 
 
-def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
+def extract_text_from_pdf(
+        openai_client : openai.OpenAI,
+        pdf_data : BytesIO) -> str:
     """
     Given the binary data of a pdf file, return a list of all the questions in it.
     """
-
     # Open PDF in read-binary format and extract data iteratively per page
     reader = PyPDF2.PdfReader(pdf_data)
 
@@ -60,7 +61,7 @@ def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
         b) If there is a drag force of kv resisting the ball, what is the maximum height now?
         """
 
-        cleaned_page_response = client.chat.completions.create(
+        cleaned_page_response = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role" : "system", "content" : CLEAN_INPUT_SYSPROMPT},
@@ -77,47 +78,6 @@ def extract_text_from_pdf(client : openai.OpenAI, pdf_data : BytesIO) -> str:
 
     return questions
 
-def files_upload_pipeline(
-    db_connection : sqlite3.Connection,
-    collection : Collection,
-    cursor : sqlite3.Cursor,
-    client : openai.OpenAI,
-    pdf_files : List[BytesIO]
-) -> None:
-    """
-    Given a list of binary data of PDFs, return a list of strings,
-    where each string represents a chunk of text from the PDFs.
-
-    Only do this if the documents are not on the database.
-    """
-
-    chunked_documents = []
-
-    for pdf_file in pdf_files:
-
-        file_hash = compute_hash(pdf_file)
-
-        if not file_exists(cursor, file_hash):
-
-            # If the file doesn't exist, add it to the DB and chunk it
-            insert_file(cursor, file_hash)
-            db_connection.commit()
-            print("File was successfully added to database.")
-            
-            chunked_document = extract_text_from_pdf(client, pdf_file)
-            chunked_documents += chunked_document
-        else:
-            # Embeddings already exist, so we're good here
-            print("File already exists in database!")
-
-    # Embed these chunks
-    if len(chunked_documents) > 0:
-        collection.add(
-            documents=chunked_documents,
-            ids=[str(uuid.uuid4()) for _ in range(len(chunked_documents))],
-        )
-        
-
 def convert_latex_format(math_string : str) -> str:
     """
     Given a string written in the \(, \[ LaTeX format,
@@ -131,7 +91,9 @@ def convert_latex_format(math_string : str) -> str:
     
     return display_converted
 
-def keywords_pipeline(client : openai.OpenAI, query : str) -> str:
+def keywords_pipeline(
+        openai_client : openai.OpenAI,
+        query : str) -> str:
     """
     Returns relevant keywords given a query.
 
@@ -139,7 +101,6 @@ def keywords_pipeline(client : openai.OpenAI, query : str) -> str:
     - client : the OpenAI client instance being used.
     - query : the user's raw query, without any augmentation.
     """
-
     keywords_input = f"""
     I am going to provide you with a sentence. Based on it, you must return 10 words similar to the key words in this sentence.
 
@@ -148,7 +109,7 @@ def keywords_pipeline(client : openai.OpenAI, query : str) -> str:
     Here is the sentence: {query}
     """
 
-    keywords_response = client.chat.completions.create(
+    keywords_response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role" : "system", "content" : KEYWORDS_SYSPROMPT},
@@ -160,7 +121,9 @@ def keywords_pipeline(client : openai.OpenAI, query : str) -> str:
     
     return keywords
 
-def question_solution_pipeline(client : openai.OpenAI, query_with_keywords_examples : str) -> Tuple[str, str]:
+def question_solution_pipeline(
+        openai_client : openai.OpenAI,
+        query_with_keywords_examples : str) -> Tuple[str, str]:
     """
     Produce a problem and solution on a given academic topic.
 
@@ -168,9 +131,8 @@ def question_solution_pipeline(client : openai.OpenAI, query_with_keywords_examp
     - client : the OpenAI client instance being used.
     - augmented_query : a str containing the user query and relevant context for the model.
     """
-
     # Produced question
-    question_response = client.chat.completions.create(
+    question_response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role" : "system", "content" : QUESTION_SYSPROMPT},
@@ -187,7 +149,7 @@ def question_solution_pipeline(client : openai.OpenAI, query_with_keywords_examp
     {question}
     """
 
-    answer_response = client.chat.completions.create(
+    answer_response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role" : "system", "content" : ANSWER_SYSPROMPT},
@@ -202,12 +164,15 @@ def question_solution_pipeline(client : openai.OpenAI, query_with_keywords_examp
 
     return question, answer
 
-def augment_query(client : openai.OpenAI, collection : Collection, query : str) -> str:
+def augment_query(
+        openai_client : openai.OpenAI,
+        chroma_client : chromadb.PersistentClient,
+        collection_name : str,
+        query : str) -> str:
     """
     Given a user query, augment the query with keywords and example questions.
     """
-
-    keywords = keywords_pipeline(client, query)
+    keywords = keywords_pipeline(openai_client, query)
     query_with_keywords = f"""
 User query: {query}
 
@@ -215,12 +180,12 @@ Relevant keywords: {keywords}
     """
 
     # Embed user query
-    raw_query_embedding = client.embeddings.create(
+    raw_query_embedding = openai_client.embeddings.create(
         model=EMBEDDING_MODEL,
         input=query_with_keywords,
     )
     query_embedding = [e.embedding for e in raw_query_embedding.data]
-
+    collection = chroma_client.get_collection(collection_name)
     context = collection.query(
         query_embeddings=query_embedding,
         n_results=N_CONTEXT,
@@ -236,7 +201,7 @@ User query: {query}
 
 Relevant keywords: {keywords}
 
-Draw inspiration from the following example questions:
+Copy the style of these example questions. Do not use concepts outside of the examples:
 
 {formatted_context}
     """

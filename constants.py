@@ -13,7 +13,7 @@ LANGUAGE_MODEL = "gpt-3.5-turbo"
 
 # Path to vector database and mapping from embeddings to text chunks
 FILES_DB_PATH = "./files.db"
-VECTOR_DB_PATH = "./chunks.ann"
+VECTOR_DB_PATH = "./chroma"
 EMBEDDINGS_TO_TEXT_PATH = "./chunks_mapping.pkl"
 
 # Temperature for prompts
@@ -30,7 +30,7 @@ Welcome to Intellitest.
 
 Intellitest is an LLM application that generates exam questions tailored to your specific exam, based on the documents you provide.
 
-To get started, simply upload your exam documents.
+To get started, simply upload your exam documents. Alternatively, you can query straight away if you want to use existing embeddings stored on the database.
 """
 
 START_QUERYING = """
