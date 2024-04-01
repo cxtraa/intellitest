@@ -61,6 +61,8 @@ embedding_function = OpenAIEmbeddingFunction(
 )
 
 # Initialise ChromaDB client
+if not os.path.exists("./chroma"):
+    os.makedirs("./chroma")
 chroma_client = chromadb.PersistentClient(path="./chroma")
 
 with st.chat_message("assistant", avatar="🌐"):

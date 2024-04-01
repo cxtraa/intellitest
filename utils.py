@@ -80,8 +80,8 @@ def extract_text_from_pdf(
 
 def convert_latex_format(math_string : str) -> str:
     """
-    Given a string written in the \(, \[ LaTeX format,
-    return it as a $, $$ formatted LaTeX string.
+    Given a string written in Markdown LaTeX, return it in the usual LaTeX
+    format.
     """
     # Replace inline math from \(...\) to $...$
     inline_converted = re.sub(r'\\\((.*?)\\\)', r'$\1$', math_string)
